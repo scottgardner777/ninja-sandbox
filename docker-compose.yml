@@ -1,0 +1,52 @@
+# Ninja Sandbox: free malware detonation range + Raz0r Sensor + Adversary DNA.
+#   cp .env.example .env   (edit)   ->   bash cell/build.sh   ->   docker compose up -d   ->   http://127.0.0.1:8800
+#
+# Self-hosted by default: everything stays in ./data on this box. The sandbox service needs the Docker socket to
+# spin the no-egress cell containers (sinkhole + namespace holder + zero-capability runner); it never runs a sample
+# in its own container and never on the host.
+services:
+  sandbox:
+    build: .
+    image: ninja-sandbox:latest
+    container_name: ninja-sandbox
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SANDBOX_DATA: /data
+      SANDBOX_HOST_DATA: ${PWD}/data            # host view of ./data, for the cell's bind mounts through the socket
+      SANDBOX_HOST_SINKHOLE: ${PWD}/sandbox/sinkhole.py
+    volumes:
+      - ./data:/data
+      - ./sandbox/sinkhole.py:/app/sandbox/sinkhole.py:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${SENSOR_WATCH_HOST:-./data/watch}:/watch:ro   # drop files here (or point it at a honeypot's download dir)
+    ports:
+      - "${SANDBOX_BIND:-127.0.0.1}:${SANDBOX_PORT:-8800}:8800"
+    mem_limit: 1g
+
+  sensor:
+    image: ninja-sandbox:latest
+    container_name: raz0r-sensor
+    restart: unless-stopped
+    env_file: .env
+    command: ["python", "-m", "sandbox.sensor.run"]
+    environment:
+      SANDBOX_DATA: /data
+      SANDBOX_HOST_DATA: ${PWD}/data
+      SENSOR_INPUT: ${SENSOR_INPUT:-file}          # file | syslog | inline
+      SENSOR_FORMAT: ${SENSOR_FORMAT:-auto}        # caddy | nginx | apache | traefik | auto
+      SENSOR_LOG_PATHS: ${SENSOR_LOG_PATHS:-/logs/access.log}
+      SANDBOX_WATCH_DIRS: /watch
+      SENSOR_UPSTREAM: ${SENSOR_UPSTREAM:-http://127.0.0.1:3000}
+    volumes:
+      - ./data:/data
+      - ${SENSOR_LOG_HOST:-./data/logs}:/logs:ro     # on-host: your proxy's access-log directory, read-only
+      - ${SENSOR_WATCH_HOST:-./data/watch}:/watch:ro
+      - /var/run/docker.sock:/var/run/docker.sock   # only for the opt-in dropper fetcher (a throwaway curl container)
+    ports:
+      - "${SENSOR_SYSLOG_BIND:-127.0.0.1}:5514:5514/udp"   # off-host: your proxy ships its access log here (syslog)
+      - "${SENSOR_SYSLOG_BIND:-127.0.0.1}:5514:5514/tcp"
+      - "${SENSOR_INLINE_BIND:-127.0.0.1}:8080:8080"       # inline: the logging reverse proxy
+    mem_limit: 512m
+    depends_on:
+      - sandbox

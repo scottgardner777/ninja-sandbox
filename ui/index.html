@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ninja Sandbox</title>
+<meta name="description" content="Free malware detonation range with the Raz0r edge sensor and Adversary DNA. Self-hosted, no egress, deep insight.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;500;600;700&family=Fragment+Mono&display=swap" rel="stylesheet">
+<style>
+:root{--void:#07060C;--dusk:#110F1A;--b1:#221E33;--b2:#332D4A;--text:#EDE9F7;--mute:#9B96AE;--mute2:#B7B2C8;--lead:#3FD3FF;--hit:#35D07F;--miss:#FF5C8A;--open:#FF9B2E;--watch:#F5C84B;--model:#8B6CFF}
+*{box-sizing:border-box}html,body{margin:0;background:var(--void);color:var(--text);font-family:Manrope,system-ui,sans-serif;font-size:15px;line-height:1.5}
+a{color:var(--lead);text-decoration:none}a:hover{text-decoration:underline}
+h1,h2,h3{font-family:Unbounded,Manrope,sans-serif;font-weight:700;letter-spacing:-.01em;margin:0}
+h1{font-size:34px;line-height:1.15}h2{font-size:18px;margin-bottom:10px}h3{font-size:14px;color:var(--mute2);font-weight:500;text-transform:uppercase;letter-spacing:.08em;margin:18px 0 8px}
+code,.mono,pre{font-family:"Fragment Mono",ui-monospace,Menlo,monospace;font-size:12.5px}
+pre{background:#0B0A12;border:1px solid var(--b1);border-radius:8px;padding:12px;overflow:auto;max-height:420px;margin:0;white-space:pre-wrap;word-break:break-all}
+header{position:sticky;top:0;z-index:5;background:rgba(7,6,12,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--b1)}
+.wrap{max-width:1240px;margin:0 auto;padding:0 16px}
+nav{display:flex;align-items:center;gap:8px;height:60px}
+.mark{display:flex;align-items:center;gap:10px;margin-right:18px;font-family:Unbounded;font-weight:700;font-size:15px}
+.mark svg{width:26px;height:26px}
+.tab{padding:8px 14px;border-radius:999px;color:var(--mute2);cursor:pointer;border:1px solid transparent;font-weight:600}
+.tab.on{color:var(--text);border-color:var(--b2);background:var(--dusk)}
+.spacer{flex:1}.pill{font-size:12px;color:var(--mute);border:1px solid var(--b1);border-radius:999px;padding:4px 10px}
+.pill b{color:var(--text)}.pill.ok b{color:var(--hit)}.pill.bad b{color:var(--miss)}
+main{padding:24px 0 80px}
+.hero{display:grid;grid-template-columns:1.3fr 1fr;gap:28px;align-items:center;padding:28px 0 20px}
+.hero p{color:var(--mute2);font-size:16px;max-width:60ch}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
+.step{background:var(--dusk);border:1px solid var(--b1);border-radius:12px;padding:14px}
+.step b{display:block;font-family:Unbounded;font-size:13px;margin-bottom:6px}.step span{color:var(--mute);font-size:13px}
+.step i{display:inline-block;width:22px;height:22px;border-radius:50%;background:var(--lead);color:#07060C;font-style:normal;font-weight:700;text-align:center;line-height:22px;font-size:12px;margin-bottom:8px}
+.card{background:var(--dusk);border:1px solid var(--b1);border-radius:14px;padding:18px;margin-top:16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.drop{border:2px dashed var(--b2);border-radius:14px;padding:26px;text-align:center;color:var(--mute2);cursor:pointer;transition:.15s}
+.drop.over{border-color:var(--lead);color:var(--text);background:#0E1520}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--lead);color:#07060C;border:0;border-radius:10px;padding:9px 14px;font-weight:700;cursor:pointer;font-family:Manrope;font-size:14px}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--b2)}.btn.sm{padding:5px 10px;font-size:12.5px;border-radius:8px}.btn:disabled{opacity:.45;cursor:default}
+.btn.danger{background:transparent;color:var(--miss);border:1px solid var(--b2)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}th{color:var(--mute);font-weight:600;text-align:left;padding:8px 8px;border-bottom:1px solid var(--b1);font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+td{padding:9px 8px;border-bottom:1px solid var(--b1);vertical-align:top}tr.row{cursor:pointer}tr.row:hover td{background:#15131F}tr.sel td{background:#161A26}
+.tag{display:inline-block;font-size:11.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--b2);color:var(--mute2);margin:1px 3px 1px 0;white-space:nowrap}
+.tag.hit{color:var(--hit);border-color:#1f5a3c}.tag.miss{color:var(--miss);border-color:#5a2238}.tag.open{color:var(--open);border-color:#5a3d1a}.tag.watch{color:var(--watch);border-color:#5a4d1a}.tag.model{color:var(--model);border-color:#3b2d6a}.tag.lead{color:var(--lead);border-color:#1f4a5a}
+.kv{display:grid;grid-template-columns:160px 1fr;gap:4px 12px;font-size:13.5px}.kv dt{color:var(--mute)}.kv dd{margin:0;word-break:break-all}
+.stat{display:flex;flex-direction:column;gap:2px}.stat b{font-family:Unbounded;font-size:22px}.stat span{color:var(--mute);font-size:12.5px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px}
+.muted{color:var(--mute)}.small{font-size:12.5px}.right{text-align:right}
+input[type=text],input[type=password],input[type=number],select,textarea{width:100%;background:#0B0A12;color:var(--text);border:1px solid var(--b2);border-radius:8px;padding:8px 10px;font-family:Manrope;font-size:14px}
+textarea{min-height:70px;font-family:"Fragment Mono";font-size:12.5px}
+label{display:block;color:var(--mute2);font-size:12.5px;margin:10px 0 4px;font-weight:600}
+.chk{display:flex;align-items:center;gap:10px;margin:8px 0;color:var(--text)}.chk input{width:18px;height:18px;accent-color:var(--lead)}
+.bar{height:6px;background:#1B1828;border-radius:3px;overflow:hidden}.bar i{display:block;height:100%;background:var(--lead)}
+.toast{position:fixed;right:18px;bottom:18px;background:var(--dusk);border:1px solid var(--b2);border-radius:10px;padding:10px 14px;font-size:13.5px;max-width:420px;z-index:9;display:none}
+.timeline{font-family:"Fragment Mono";font-size:12px;max-height:380px;overflow:auto;border:1px solid var(--b1);border-radius:8px}
+.timeline div{display:grid;grid-template-columns:62px 48px 110px 1fr 70px;gap:8px;padding:3px 8px;border-bottom:1px solid #15131F}
+.timeline div:nth-child(odd){background:#0B0A12}.timeline .c{color:var(--lead)}.timeline .r{color:var(--mute);text-align:right}
+.hidden{display:none}
+footer{border-top:1px solid var(--b1);color:var(--mute);font-size:12.5px;padding:18px 0}
+@media(max-width:860px){.hero,.grid2,.grid3,.steps{grid-template-columns:1fr}h1{font-size:26px}.kv{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><nav>
+  <div class="mark"><svg viewBox="0 0 26 26" fill="none"><circle cx="5" cy="5" r="3" fill="#FF5C8A"/><circle cx="21" cy="5" r="3" fill="#FF9B2E"/><circle cx="5" cy="21" r="3" fill="#F5C84B"/><circle cx="21" cy="21" r="3" fill="#35D07F"/><path d="M8 5h10M5 8v10M21 8v10M8 21h10" stroke="#3FD3FF" stroke-width="1.6"/></svg>Ninja Sandbox</div>
+  <div class="tab on" data-tab="detonate">Detonate</div><div class="tab" data-tab="sensor">Sensor</div><div class="tab" data-tab="reverse">Reverse</div><div class="tab" data-tab="settings">Settings</div>
+  <div class="spacer"></div>
+  <span class="pill" id="pillCell">cell <b>…</b></span><span class="pill" id="pillSensor">sensor <b>…</b></span><span class="pill" id="pillMode">mode <b>…</b></span>
+</nav></div></header>
+
+<main class="wrap">
+<!-- ───────────────────────────── DETONATE ───────────────────────────── -->
+<section id="tab-detonate">
+  <div class="hero">
+    <div>
+      <h1>A free malware range that catches the sample at your front door and tells you what it does.</h1>
+      <p>The <b>Raz0r Sensor</b> watches your edge and pulls the dropper URLs attackers throw at it. The sample lands here in situ. Press <b>Detonate</b>: it runs for 60 s on an internal network with no way out, every DNS answer and every connect() sinkholed and logged. Then <b>Reverse</b> it: ELF structure, imports, strings, syscall timeline, process tree, files, C2 ranking, pcap, ATT&CK. No VM. No cloud. Your box.</p>
+      <div class="steps">
+        <div class="step"><i>1</i><b>Sense</b><span>Caddy, nginx, Apache or Traefik logs. On the host, over syslog, or inline. Probe families, CVE tags, Adversary DNA per IP.</span></div>
+        <div class="step"><i>2</i><b>Detonate</b><span>Zero-capability runner, read-only root, 256 MiB, strace or QEMU trace, a sinkhole with tcpdump. 60 s, then killed.</span></div>
+        <div class="step"><i>3</i><b>Reverse</b><span>Static + dynamic in one report. Deterministic verdict. Optional AI write-up with your own key.</span></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:0">
+      <div class="drop" id="drop">Drop a sample here, or click to choose<br><span class="small">ELF runs in the cell. Scripts, PE, archives get static triage only. ≤ 32 MiB. Never executed on the host.</span><input type="file" id="file" class="hidden"></div>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <input type="text" id="hashIn" placeholder="sha256 to look up" style="flex:1;min-width:200px"><button class="btn ghost" id="btnHash">Look up</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <input type="text" id="urlIn" placeholder="http://…/x86 (fetch a dropper URL into the sandbox; needs Settings → fetch droppers)" style="flex:1;min-width:200px"><button class="btn ghost" id="btnUrl">Fetch</button>
+      </div>
+      <div class="stats" style="margin-top:16px">
+        <div class="stat"><b id="stSamples">0</b><span>samples</span></div><div class="stat"><b id="stDet">0</b><span>detonated</span></div><div class="stat"><b id="stC2">0</b><span>C2 extracted</span></div><div class="stat"><b id="stDrop">0</b><span>droppers seen at the edge</span></div>
+      </div>
+      <div id="cellWarn" class="small muted" style="margin-top:10px"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:12px"><h2>Samples</h2><span class="spacer"></span><span class="small muted" id="jobsLine"></span><button class="btn ghost sm" id="btnRefresh">Refresh</button></div>
+    <div style="overflow:auto"><table id="samples"><thead><tr><th>sample</th><th>kind</th><th>origin</th><th>static</th><th>dynamic verdict</th><th>C2</th><th>ATT&amp;CK</th><th></th></tr></thead><tbody></tbody></table></div>
+    <div class="small muted" id="samplesEmpty" style="padding:14px 0">No samples yet. Drop one above, point the sensor at your logs, or set a watch directory (a honeypot's download folder) in Settings.</div>
+  </div>
+</section>
+
+<!-- ───────────────────────────── SENSOR ───────────────────────────── -->
+<section id="tab-sensor" class="hidden">
+  <div class="card"><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><h2>What hit your edge</h2><span class="small muted" id="sensorAsOf"></span><span class="spacer"></span><span class="small muted">input: <b class="mono" id="sensorInput"></b></span></div>
+    <div class="stats" style="margin-top:12px">
+      <div class="stat"><b id="seIps">0</b><span>IPs in the last 24 h</span></div><div class="stat"><b id="seProbe">0</b><span>probing IPs</span></div><div class="stat"><b id="seReq">0</b><span>requests profiled</span></div><div class="stat"><b id="seClusters">0</b><span>same-operator clusters</span></div><div class="stat"><b id="seDrop">0</b><span>dropper URLs</span></div>
+    </div></div>
+  <div class="grid2">
+    <div class="card"><h2>Droppers seen in attack traffic</h2><div class="small muted">The exploit payloads that tried to make your server fetch malware. Load one into the sandbox and detonate it.</div>
+      <div style="overflow:auto;margin-top:8px"><table id="droppers"><thead><tr><th>when</th><th>from</th><th>url</th><th>via</th><th></th></tr></thead><tbody></tbody></table></div><div class="small muted" id="dropEmpty">Nothing yet.</div></div>
+    <div class="card"><h2>Probe families</h2><div id="families"></div><h3>CVEs being tried</h3><div id="cves"></div></div>
+  </div>
+  <div class="card"><h2>Top sources, with Adversary DNA</h2>
+    <div style="overflow:auto"><table id="topIps"><thead><tr><th>ip</th><th>cc</th><th>req</th><th>archetype</th><th>families</th><th>kill chain</th><th>next move</th><th>ua</th><th>sites</th></tr></thead><tbody></tbody></table></div>
+    <div class="small muted" id="topEmpty">No traffic profiled yet.</div></div>
+  <div class="grid2">
+    <div class="card"><h2>Narratives</h2><div id="narratives"></div></div>
+    <div class="card"><h2>Same operator, different IPs</h2><div class="small muted">Cosine similarity of the 18-dimension fingerprint &gt; 0.85 (union-find).</div><div id="clusters"></div>
+      <h3>Compare two IPs</h3><div style="display:flex;gap:8px"><input type="text" id="cmpA" placeholder="ip a"><input type="text" id="cmpB" placeholder="ip b"><button class="btn ghost sm" id="btnCmp">Compare</button></div><div id="cmpOut" class="small" style="margin-top:8px"></div></div>
+  </div>
+  <div class="card" id="ipCard" class="hidden"><h2>IP <span class="mono" id="ipTitle"></span></h2><div id="ipOut"></div></div>
+</section>
+
+<!-- ───────────────────────────── REVERSE ───────────────────────────── -->
+<section id="tab-reverse" class="hidden">
+  <div class="card"><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <h2>Reverse</h2><select id="revPick" style="width:auto;min-width:320px"><option value="">pick a sample…</option></select>
+    <button class="btn" id="btnDet">Detonate</button><button class="btn ghost" id="btnExplain">AI write-up (BYOK)</button><span class="spacer"></span><span class="small muted" id="revJob"></span></div>
+    <div id="revEmpty" class="small muted" style="margin-top:10px">Pick a sample. Static triage is instant; detonation takes about 70 s.</div>
+  </div>
+  <div id="rev" class="hidden">
+    <div class="card"><h2 id="revVerdict"></h2><div id="revSummary" style="margin-top:8px"></div><div id="revAttack" style="margin-top:10px"></div>
+      <div id="revExplain" class="hidden" style="margin-top:14px;border-top:1px solid var(--b1);padding-top:12px"><span class="tag model">model write-up</span> <span class="small muted" id="revExplainMeta"></span><div id="revExplainText" style="white-space:pre-wrap;margin-top:8px"></div></div></div>
+    <div class="grid2">
+      <div class="card"><h2>What it is</h2><dl class="kv" id="revStatic"></dl><h3>ELF</h3><dl class="kv" id="revElf"></dl><h3>Shared libraries</h3><div id="revNeeded"></div><h3>Imports</h3><div id="revImports" class="small"></div></div>
+      <div class="card"><h2>Command and control</h2><div id="revC2"></div><h3>First bytes it sent (sinkhole)</h3><div id="revHits" class="mono small"></div><h3>DNS it asked for</h3><div id="revDns"></div><h3>Artifacts</h3><div id="revArtifacts"></div></div>
+    </div>
+    <div class="grid2">
+      <div class="card"><h2>Processes and files</h2><dl class="kv" id="revProcs"></dl><h3>Files</h3><div id="revFiles" class="small"></div></div>
+      <div class="card"><h2>Syscalls</h2><div id="revSyscalls"></div><h3>Errors</h3><div id="revErrors" class="small"></div></div>
+    </div>
+    <div class="card"><h2>Timeline</h2><div class="small muted">First 400 traced events. t+ms is relative to the first event.</div><div class="timeline" id="revTimeline" style="margin-top:8px"></div></div>
+    <div class="grid2">
+      <div class="card"><h2>Indicators in the binary</h2><dl class="kv" id="revIocs"></dl><h3>Interesting strings</h3><pre id="revIntStrings"></pre><button class="btn ghost sm" id="btnStrings" style="margin-top:8px">All strings</button><pre id="revAllStrings" class="hidden" style="margin-top:8px"></pre></div>
+      <div class="card"><h2>Segments and sections</h2><div style="overflow:auto"><table id="revSegs"><thead><tr><th>segment</th><th>flags</th><th>filesz</th><th>memsz</th><th>entropy</th></tr></thead><tbody></tbody></table></div><div style="overflow:auto;margin-top:10px"><table id="revSecs"><thead><tr><th>section</th><th>type</th><th>size</th><th>entropy</th></tr></thead><tbody></tbody></table></div><h3>Hexdump</h3><pre id="revHex"></pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────────── SETTINGS ───────────────────────────── -->
+<section id="tab-settings" class="hidden">
+  <div class="grid2">
+    <div class="card"><h2>Mode</h2>
+      <label>Hosting</label><select id="sMode"><option value="self-hosted">Self-hosted: everything stays on this box</option><option value="hybrid">Hybrid: sensor here, detonation at Ninja</option><option value="ninja-hosted">Ninja-hosted (multi-tenant, free tier)</option></select>
+      <h3>Cell</h3>
+      <label>Detonation window (seconds)</label><input type="number" id="sTimeout" min="10" max="600">
+      <div class="chk"><input type="checkbox" id="sAuto"><span>Auto-detonate every new ELF sample (uploads, watch dirs, fetched droppers)</span></div>
+      <div class="chk"><input type="checkbox" id="sFetch"><span>Fetch dropper URLs the sensor sees at the edge into the sandbox (throwaway curl container, size-capped, never run on the host)</span></div>
+      <label>Fetch size cap (MiB)</label><input type="number" id="sFetchMb" min="1" max="64">
+      <div style="margin-top:12px"><button class="btn ghost sm" id="btnBuild">Build / rebuild the cell images</button> <span class="small muted" id="buildOut"></span></div>
+      <h3>Sensor</h3>
+      <label>Input</label><select id="sInput"><option value="file">file: tail the proxy's access log on this host</option><option value="syslog">syslog: receive logs from a proxy on another host (:5514)</option><option value="inline">inline: logging reverse proxy (:8080 → upstream)</option></select>
+      <label>Log format</label><select id="sFormat"><option value="auto">auto</option><option value="caddy">caddy (JSON)</option><option value="nginx">nginx (combined)</option><option value="apache">apache (combined)</option><option value="traefik">traefik (JSON)</option></select>
+      <label>Log paths inside the sensor container (comma-separated; mount the host dir at /logs in .env)</label><input type="text" id="sPaths">
+      <label>Watch directories (files dropped here become samples)</label><input type="text" id="sWatch">
+      <label>Your own addresses / CIDRs (never profiled, never sent)</label><input type="text" id="sExclude" placeholder="203.0.113.5, 198.51.100.0/24">
+      <div style="margin-top:14px"><button class="btn" id="btnSave">Save settings</button></div>
+    </div>
+    <div>
+      <div class="card" style="margin-top:0"><h2>Bring your own key</h2><div class="small muted">Unlocks the AI write-up on the Reverse tab. The key is stored only in this sandbox's settings file on this box and is sent only to the provider you pick. No key: the deterministic report is the report.</div>
+        <label>Provider</label><select id="bProv"><option value="none">none (deterministic report only)</option><option value="anthropic">Anthropic (Claude)</option><option value="openai-compatible">OpenAI-compatible (llama.cpp, vLLM, Ollama, LM Studio, Ninja Cortex)</option></select>
+        <label>Model</label><input type="text" id="bModel" placeholder="claude-opus-5-5 (Anthropic default) · or the local server's model name">
+        <label>Base URL (OpenAI-compatible only)</label><input type="text" id="bBase" placeholder="http://127.0.0.1:8080/v1">
+        <label>API key</label><input type="password" id="bKey" placeholder="leave blank to keep the stored key"><div class="small muted" id="bKeyState"></div>
+        <div style="margin-top:10px"><button class="btn ghost sm" id="btnClearKey">Forget key</button></div></div>
+      <div class="card"><h2>Telemetry</h2>
+        <div class="chk"><input type="checkbox" id="tEnabled"><span>Send aggregates to Ninja (off by default when self-hosted)</span></div>
+        <div class="chk"><input type="checkbox" id="tShare"><span>Also share sample bytes (hashes and verdicts are shared whenever telemetry is on; bytes only with this)</span></div>
+        <label>Endpoint</label><input type="text" id="tUrl">
+        <div class="small muted" style="margin-top:8px">Exactly this JSON would be sent, every 15 minutes. Per-IP aggregates and sample hashes. Never raw log lines, never headers or bodies, never sample bytes unless ticked.</div>
+        <pre id="tPreview" style="margin-top:8px;max-height:300px"></pre>
+        <div class="small muted" style="margin-top:6px">In return, IPs the Ninja perimeter graph already knows are marked "seen by Ninja" on the Sensor tab (coming with the Ninja-hosted mode).</div></div>
+      <div class="card"><h2>Activity</h2><div id="events" class="small mono" style="max-height:300px;overflow:auto"></div></div>
+    </div>
+  </div>
+  <div class="card small muted"><b>Legal, in one breath.</b> Samples you upload are yours; do not upload files containing personal data or a client's data you are not allowed to process. The cell never returns a live sample, only reports and traces. The sensor only reads your own logs; the dropper fetcher only follows URLs that attackers sent to your own edge, into an isolated container. Reports are evidence, not legal advice. Apache-2.0.</div>
+</section>
+</main>
+<footer><div class="wrap">Ninja Sandbox · free, by the people who run the honeynet · <a href="https://ninjalabz.io" target="_blank" rel="noopener">ninjalabz.io</a> · <span id="footMode"></span> · v<span id="footVer"></span></div></footer>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const TOKEN=new URLSearchParams(location.search).get('token')||localStorage.getItem('sbx_token')||'';
+if(TOKEN)localStorage.setItem('sbx_token',TOKEN);
+const H=()=>TOKEN?{'X-Sandbox-Token':TOKEN}:{};
+async function api(p,o={}){const r=await fetch('/api/sandbox'+p,{...o,headers:{...(o.headers||{}),...H()}});let d=null;try{d=await r.json()}catch(e){}if(!r.ok){throw new Error((d&&(d.detail&&(d.detail.detail||d.detail)))||r.status)}return d}
+function toast(m,ms=3500){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',ms)}
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtT=t=>t?new Date(typeof t==='number'?t*1000:t).toISOString().replace('T',' ').slice(0,19):'';
+const short=s=>s?s.slice(0,12)+'…':'';
+let STATUS={},SAMPLES=[],SENSOR={},SETTINGS={},CUR=null;
+
+// tabs
+$$('.tab').forEach(t=>t.onclick=()=>show(t.dataset.tab));
+function show(name){$$('.tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===name));$$('main > section').forEach(s=>s.classList.toggle('hidden',s.id!=='tab-'+name));location.hash=name;if(name==='sensor')loadSensor();if(name==='settings')loadSettings();if(name==='reverse')fillPick()}
+
+// ── status + samples ──
+async function loadStatus(){try{STATUS=await api('/status')}catch(e){toast('API: '+e.message);return}
+ const c=STATUS.cell||{};$('#pillCell').className='pill '+(c.ready?'ok':'bad');$('#pillCell').innerHTML='cell <b>'+(c.ready?'ready':(c.docker?'images missing':'no docker'))+'</b>';
+ $('#pillSensor').innerHTML='sensor <b>'+(STATUS.sensor.as_of?(STATUS.sensor.ips+' ips'):'idle')+'</b>';$('#pillMode').innerHTML='mode <b>'+STATUS.mode+'</b>';
+ $('#footMode').textContent=STATUS.mode;$('#footVer').textContent=STATUS.version;
+ $('#stSamples').textContent=STATUS.samples;$('#stDet').textContent=STATUS.detonated;$('#stC2').textContent=STATUS.c2_extracted;$('#stDrop').textContent=STATUS.sensor.droppers||0;
+ $('#cellWarn').innerHTML=c.ready?'Cell ready: docker '+esc(c.server)+(c.binfmt_foreign_arch?', foreign-arch runners available':', <b>x86-64 only</b> (install binfmt for ARM/MIPS: <code>docker run --privileged --rm tonistiigi/binfmt --install all</code>)'):
+   (c.docker?'Cell images missing: Settings → <b>Build the cell images</b> (or <code>bash cell/build.sh</code>).':'Docker socket not reachable: detonation is off; static triage still works.');
+ const running=Object.entries(STATUS.jobs||{});$('#jobsLine').textContent=running.length?running.length+' detonation running: '+running.map(([k])=>short(k)).join(', '):'';
+}
+async function loadSamples(){const d=await api('/samples?limit=500');SAMPLES=d.samples||[];const tb=$('#samples tbody');tb.innerHTML='';
+ $('#samplesEmpty').style.display=SAMPLES.length?'none':'block';
+ for(const s of SAMPLES){const tr=document.createElement('tr');tr.className='row'+(CUR===s.sha256?' sel':'');
+  const kind=esc(s.kind)+(s.arch?' '+esc(s.arch):'')+(s.bits?'/'+s.bits:'');
+  const origin=esc((s.origins||[s.origin]).join(', '));
+  const dyn=s.detonated?(s.c2_extracted?'<span class="tag miss">C2</span>':'')+esc(s.verdict||s.status):'<span class="muted">not run</span>';
+  tr.innerHTML=`<td><span class="mono">${short(s.sha256)}</span><br><span class="small muted">${esc(s.name||'')} · ${s.size} B · ${fmtT(s.first_seen)}</span></td><td>${kind}</td><td class="small">${origin}${s.dropper?'<br><span class="small muted">'+esc(s.dropper.url)+'</span>':''}</td><td class="small">${esc(s.static_verdict||'')}</td><td class="small">${dyn}</td><td class="small mono">${(s.c2_candidates||[]).slice(0,2).map(esc).join('<br>')}</td><td>${(s.attack||[]).map(a=>'<span class="tag open">'+esc(a)+'</span>').join('')}</td><td class="right"><button class="btn sm" data-det="${s.sha256}" ${s.kind==='elf'?'':'disabled'}>Detonate</button></td>`;
+  tr.onclick=e=>{if(e.target.dataset.det)return;openReverse(s.sha256)};tb.appendChild(tr)}
+ tb.querySelectorAll('[data-det]').forEach(b=>b.onclick=()=>detonate(b.dataset.det));fillPick()}
+async function detonate(sha){try{const r=await api('/detonate/'+sha,{method:'POST'});toast(r.queued?'Detonating '+short(sha)+' (about 70 s)…':'Already running');pollJob(sha)}catch(e){toast('Detonate: '+e.message,6000)}}
+function pollJob(sha){const h=setInterval(async()=>{const j=await api('/jobs');const st=j.jobs[sha];$('#revJob').textContent=st?('job: '+st.state+(st.verdict?' · '+st.verdict:'')):'';if(!st||st.state!=='running'){clearInterval(h);await loadSamples();await loadStatus();if(CUR===sha)openReverse(sha);toast(st&&st.state==='done'?'Done: '+(st.verdict||st.status):'Detonation '+(st?st.state:'ended'),6000)}},3000)}
+
+// upload
+const drop=$('#drop'),file=$('#file');drop.onclick=()=>file.click();
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over')}));['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over')}));
+drop.addEventListener('drop',e=>{if(e.dataTransfer.files[0])upload(e.dataTransfer.files[0])});file.onchange=()=>{if(file.files[0])upload(file.files[0]);file.value=''};
+async function upload(f){const fd=new FormData();fd.append('file',f,f.name);toast('Uploading '+f.name+'…');try{const r=await api('/samples',{method:'POST',body:fd});toast('Triaged: '+(r.sample.static_verdict||r.sample.kind)+(r.auto_detonate?' · auto-detonating':''),6000);await loadSamples();await loadStatus();openReverse(r.sample.sha256);if(r.auto_detonate)pollJob(r.sample.sha256)}catch(e){toast('Upload: '+e.message,6000)}}
+$('#btnHash').onclick=async()=>{const h=$('#hashIn').value.trim().toLowerCase();if(!/^[0-9a-f]{64}$/.test(h))return toast('sha256 expected');try{await api('/samples',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hash:h})});openReverse(h)}catch(e){toast('Not in this sandbox: '+e.message)}};
+$('#btnUrl').onclick=async()=>{const u=$('#urlIn').value.trim();if(!u)return;toast('Fetching into the sandbox…');try{const r=await api('/samples',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:u})});toast('Fetched: '+(r.sample.static_verdict||r.sample.kind),6000);await loadSamples();openReverse(r.sample.sha256)}catch(e){toast('Fetch: '+e.message,7000)}};
+$('#btnRefresh').onclick=()=>{loadSamples();loadStatus()};
+
+// ── sensor ──
+async function loadSensor(){SENSOR=await api('/sensor');const p=SENSOR;$('#sensorAsOf').textContent=p.as_of?'as of '+fmtT(p.as_of)+' · '+(p.lines_seen||0)+' lines seen':'sensor has not written a picture yet';$('#sensorInput').textContent=(p.input||'')+' / '+(p.format||'');
+ $('#seIps').textContent=p.ips||0;$('#seProbe').textContent=p.probing_ips||0;$('#seReq').textContent=p.requests_in_window||0;$('#seClusters').textContent=(p.dna&&p.dna.summary&&p.dna.summary.clusters_found)||0;$('#seDrop').textContent=(p.droppers||[]).length;
+ const dt=$('#droppers tbody');dt.innerHTML='';$('#dropEmpty').style.display=(p.droppers||[]).length?'none':'block';
+ for(const d of (p.droppers||[])){const tr=document.createElement('tr');tr.innerHTML=`<td class="small">${fmtT(d.ts)}</td><td class="mono small">${esc(d.ip)}</td><td class="mono small" style="word-break:break-all">${esc(d.url)}</td><td class="small">${esc(d.family||'')}${d.cve?'<br><span class="tag open">'+esc(d.cve)+'</span>':''}</td><td class="right"><button class="btn sm" data-u="${esc(d.url)}" data-ip="${esc(d.ip)}">Load into sandbox</button></td>`;dt.appendChild(tr)}
+ dt.querySelectorAll('[data-u]').forEach(b=>b.onclick=async()=>{toast('Fetching dropper…');try{const r=await api('/droppers/fetch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:b.dataset.u,ip:b.dataset.ip})});toast('Loaded: '+(r.sample.static_verdict||r.sample.kind),6000);await loadSamples();openReverse(r.sample.sha256)}catch(e){toast('Fetch: '+e.message,7000)}});
+ const fam=p.families||{},mx=Math.max(1,...Object.values(fam));$('#families').innerHTML=Object.entries(fam).slice(0,14).map(([k,v])=>`<div style="display:grid;grid-template-columns:150px 1fr 50px;gap:8px;align-items:center;margin:4px 0"><span class="small">${esc(k)}</span><div class="bar"><i style="width:${Math.round(100*v/mx)}%"></i></div><span class="small right muted">${v}</span></div>`).join('')||'<span class="muted small">none</span>';
+ $('#cves').innerHTML=Object.entries(p.cves||{}).map(([k,v])=>`<span class="tag open">${esc(k)} ×${v}</span>`).join('')||'<span class="muted small">none</span>';
+ const tt=$('#topIps tbody');tt.innerHTML='';$('#topEmpty').style.display=(p.top||[]).length?'none':'block';
+ for(const r of (p.top||[])){const tr=document.createElement('tr');tr.className='row';tr.innerHTML=`<td class="mono">${esc(r.ip)}</td><td>${esc(r.cc||'')}</td><td>${r.req}</td><td>${r.archetype?'<span class="tag lead">'+esc(r.archetype)+'</span> <span class="small muted">'+Math.round((r.confidence||0)*100)+'%</span>':'<span class="muted small">&lt;3 req</span>'}</td><td>${(r.families||[]).map(f=>'<span class="tag">'+esc(f)+'</span>').join('')}${(r.cves||[]).map(c=>'<span class="tag open">'+esc(c)+'</span>').join('')}</td><td class="small">${(r.kill_chain||[]).map(esc).join(' → ')}</td><td class="small">${r.next?esc(r.next.category||r.next.next||JSON.stringify(r.next)).slice(0,40):''}</td><td class="small">${esc(r.ua||'')}</td><td class="small">${(r.sites||[]).map(esc).join(', ')}</td>`;tr.onclick=()=>openIp(r.ip);tt.appendChild(tr)}
+ $('#narratives').innerHTML=((p.dna&&p.dna.narratives)||[]).slice(0,12).map(n=>`<div style="padding:8px 0;border-bottom:1px solid var(--b1)"><span class="mono">${esc(n.ip)}</span> <span class="tag lead">${esc(n.archetype)}</span> <span class="small muted">${n.total_requests} req · dna ${esc(n.dna_hash)}</span><div class="small" style="margin-top:4px">${esc(n.narrative).slice(0,600)}</div></div>`).join('')||'<span class="muted small">none yet</span>';
+ $('#clusters').innerHTML=((p.dna&&p.dna.clusters)||[]).slice(0,10).map(c=>`<div style="padding:6px 0"><span class="tag model">cluster</span> ${(c.members||[]).map(m=>'<span class="mono">'+esc(m)+'</span>').join(', ')} <span class="small muted">sim ${c.avg_similarity||c.similarity||''}</span></div>`).join('')||'<span class="muted small">no clusters yet</span>'}
+async function openIp(ip){$('#ipCard').classList.remove('hidden');$('#ipTitle').textContent=ip;const d=await api('/sensor/ip/'+encodeURIComponent(ip));if(d.status!=='ok'){$('#ipOut').textContent='no requests kept for this IP';return}
+ $('#ipOut').innerHTML=`<div class="small" style="margin:6px 0">${esc(d.narrative)}</div><dl class="kv"><dt>archetype</dt><dd>${esc(d.archetype.primary)} (${Math.round(d.archetype.confidence*100)}%) ${Object.entries(d.archetype.scores||{}).map(([k,v])=>'<span class="tag">'+esc(k)+' '+(+v).toFixed(2)+'</span>').join('')}</dd><dt>kill chain</dt><dd>${Object.entries(d.kill_chain||{}).map(([k,v])=>'<span class="tag open">'+esc(k)+' '+Math.round((v.confidence||v)*100)/100+'</span>').join('')||'—'}</dd><dt>next move</dt><dd>${esc(JSON.stringify((d.markov&&d.markov.predictions||[]).slice(0,3)))}</dd><dt>dna</dt><dd class="mono">${esc(d.dna_hash)} · ${(d.dna_vector||[]).map(v=>v.toFixed(2)).join(' ')}</dd></dl><h3>Requests (last ${d.requests.length})</h3><pre>${d.requests.slice(-60).map(r=>fmtT(r.ts)+' '+r.status+' '+r.method+' '+esc(r.host)+esc(r.uri)+'  '+esc(r.ua)).join('\n')}</pre>`;$('#ipCard').scrollIntoView({behavior:'smooth'})}
+$('#btnCmp').onclick=async()=>{const d=await api('/sensor/compare?a='+encodeURIComponent($('#cmpA').value.trim())+'&b='+encodeURIComponent($('#cmpB').value.trim()));$('#cmpOut').textContent=d.status==='ok'?`similarity ${d.similarity} → ${d.same_operator_likely?'SAME operator likely':'different'} (${d.a.archetype} vs ${d.b.archetype})`:'one of them has no kept requests'};
+
+// ── reverse ──
+function fillPick(){const sel=$('#revPick');const v=sel.value;sel.innerHTML='<option value="">pick a sample…</option>'+SAMPLES.map(s=>`<option value="${s.sha256}" ${s.sha256===(CUR||v)?'selected':''}>${short(s.sha256)} · ${esc(s.kind)} ${esc(s.arch||'')} · ${esc(s.name||'')}${s.detonated?' · '+esc(s.verdict||''):''}</option>`).join('')}
+$('#revPick').onchange=()=>{if($('#revPick').value)openReverse($('#revPick').value)};
+$('#btnDet').onclick=()=>CUR&&detonate(CUR);
+$('#btnExplain').onclick=async()=>{if(!CUR)return;toast('Asking the model…',8000);try{const r=await api('/explain/'+CUR,{method:'POST'});if(!r.ok){toast(r.error||r.note||'no write-up',8000)}else{toast('Write-up ready')}openReverse(CUR)}catch(e){toast('Explain: '+e.message,7000)}};
+$('#btnStrings').onclick=async()=>{const d=await api('/report/'+CUR+'/strings');const el=$('#revAllStrings');el.classList.toggle('hidden');el.textContent=d.ascii.join('\n')+(d.utf16.length?'\n\n-- utf16 --\n'+d.utf16.join('\n'):'')};
+const dl=(k,v)=>`<dt>${esc(k)}</dt><dd>${v}</dd>`;
+async function openReverse(sha){CUR=sha;show('reverse');fillPick();let rep;try{rep=await api('/report/'+sha)}catch(e){toast('Report: '+e.message);return}
+ $('#revEmpty').classList.add('hidden');$('#rev').classList.remove('hidden');const s=rep.static||{},d=rep.dynamic,e=s.elf||{};
+ $('#btnDet').disabled=s.kind!=='elf';$('#revJob').textContent=rep.job?('job: '+rep.job.state):'';
+ $('#revVerdict').innerHTML=(d&&d.verdict)?esc(d.verdict):(s.kind==='elf'?'Not detonated yet · '+esc(s.static_verdict||''):esc(s.static_verdict||s.kind));
+ $('#revSummary').innerHTML=(rep.summary||[]).map(l=>'<div>'+esc(l)+'</div>').join('');
+ $('#revAttack').innerHTML=((d&&d.attack)||[]).map(a=>`<span class="tag open" title="${esc(a.evidence)}">${esc(a.technique)} ${esc(a.name)}</span>`).join('');
+ if(rep.explain&&rep.explain.text){$('#revExplain').classList.remove('hidden');$('#revExplainMeta').textContent=(rep.explain.provider||'')+' · '+(rep.explain.model||'')+' · '+(rep.explain.at||'')+(rep.explain.fallback_used?' · served by fallback model':'');$('#revExplainText').textContent=rep.explain.text}else $('#revExplain').classList.add('hidden');
+ $('#revStatic').innerHTML=dl('sha256','<span class="mono">'+esc(s.sha256)+'</span>')+dl('md5 / sha1','<span class="mono small">'+esc(s.md5)+' / '+esc(s.sha1)+'</span>')+dl('name',esc(s.name))+dl('origin',esc((s.origins||[s.origin]).join(', '))+(s.dropper?' · <span class="mono small">'+esc(s.dropper.url)+'</span>':''))+dl('kind',esc(s.kind)+(s.arch?' · '+esc(s.arch)+' '+(s.bits||'')+'-bit '+esc(s.endian||''):''))+dl('size',s.size+' B')+dl('entropy',s.entropy+(s.high_entropy?' <span class="tag watch">high</span>':''))+dl('packer',esc(s.packer||'none detected'))+dl('default creds',(s.credentials&&s.credentials.default_credentials_seen)+' words'+((s.credentials&&s.credentials.words||[]).length?' · <span class="small muted">'+esc(s.credentials.words.slice(0,12).join(', '))+'</span>':''))+dl('first seen',fmtT(s.first_seen));
+ $('#revElf').innerHTML=e.is_elf?dl('summary',esc(e.summary))+dl('type',esc(e.type))+dl('entry','<span class="mono">'+esc(e.entry)+'</span>')+dl('interp',esc(e.interp||'none (static)'))+dl('segments',e.phnum+(e.rwx_segment?' <span class="tag miss">RWX segment</span>':'')+(e.exec_stack?' <span class="tag miss">exec stack</span>':''))+dl('sections',e.shnum+(e.stripped?' · stripped':''))+dl('errors',esc((e.errors||[]).join('; ')||'none')):'<dt>ELF</dt><dd class="muted">not an ELF: '+esc(s.kind)+'</dd>';
+ $('#revNeeded').innerHTML=(e.needed||[]).map(n=>'<span class="tag">'+esc(n)+'</span>').join('')||'<span class="muted small">none (static binary)</span>';
+ const NET=new Set(['socket','connect','send','sendto','recv','recvfrom','getaddrinfo','gethostbyname','bind','listen','accept','inet_addr','htons','select','poll','epoll_wait','fork','execve','system','popen','ptrace','prctl','kill','unlink','chmod','setsid','daemon','ioctl','mmap','mprotect','dlopen','getpid','rand','srand','time','strtok']);
+ $('#revImports').innerHTML=(e.imports||[]).map(i=>'<span class="tag '+(NET.has(i)?'lead':'')+'">'+esc(i)+'</span>').join('')||'<span class="muted small">no dynamic symbols (static/stripped)</span>';
+ if(d&&d.run&&d.run.status==='ran'){$('#revC2').innerHTML=`<div class="small muted">${d.connect_attempts} connect attempts to ${d.distinct_targets} distinct targets · scanner targets ${d.scan_targets} on ports ${esc(JSON.stringify(d.scan_ports))} · protocol ${esc(d.c2_protocol||'?')}</div>`+((d.c2_likely||[]).map(c=>`<div style="margin:6px 0"><span class="tag miss">C2</span> <span class="mono">${esc(c.endpoint)}</span> <span class="small muted">${c.attempts}× · ${Math.round(c.share*100)}% of all dials</span></div>`).join('')||'<div class="small muted" style="margin-top:6px">no repeat endpoint stood out</div>')+'<h3>Top targets</h3>'+(d.top_targets||[]).slice(0,12).map(t=>`<span class="tag mono">${esc(t.endpoint)} ×${t.attempts}</span>`).join('');
+  $('#revHits').innerHTML=(d.sinkhole_hits||[]).slice(0,12).map(h=>`<div style="margin:4px 0"><span class="muted">${esc((h.ts||'').slice(11,23))}</span> → ${esc(h.dst)}:${h.dport} <span class="muted">${h.bytes} B</span><br>${esc(h.head)||'<i class="muted">(connected, sent nothing)</i>'}${h.after_banner?'<br><span class="muted">after banner:</span> '+esc(h.after_banner):''}</div>`).join('')||'<span class="muted">nothing reached the sinkhole</span>';
+  $('#revDns').innerHTML=(d.dns||[]).map(n=>'<span class="tag miss">'+esc(n)+'</span>').join('')||'<span class="muted small">no DNS</span>';
+  $('#revArtifacts').innerHTML=Object.entries(d.artifacts||rep.artifacts||{}).filter(([k,v])=>v).map(([k])=>`<a class="btn ghost sm" href="/api/sandbox/artifact/${sha}/${k}${TOKEN?'?token='+TOKEN:''}">${k==='pcap'?'capture.pcap':k}</a> `).join('')+`<div class="small muted" style="margin-top:6px">exit ${esc(d.exit)} · ${d.run.seconds}s · ${esc(d.run.tracer)} · ${esc(d.run.image)}</div>`;
+  const pr=d.procs||{};$('#revProcs').innerHTML=dl('forks',pr.forks)+dl('execve',(pr.execs||[]).map(x=>'<span class="mono small">'+esc(x.path)+' '+esc(x.argv)+'</span>').join('<br>')||'none')+dl('renamed to',(pr.names||[]).map(esc).join(', ')||'—')+dl('kill()',(pr.kills||[]).slice(0,8).map(k=>k.pid+':'+k.sig).join(' ')||'none')+dl('signals',(pr.signals||[]).slice(0,10).map(esc).join(' ')||'—')+dl('self-deleted',d.self_deleted?'<span class="tag miss">yes</span>':'no')+dl('listeners',(d.binds||[]).join(', ')||'none');
+  const f=d.files||{};$('#revFiles').innerHTML=['persistence','defence','recon','created','unlinked','renamed'].map(k=>(f[k]&&f[k].length)?`<div style="margin:4px 0"><span class="tag ${k==='persistence'||k==='defence'?'miss':(k==='recon'?'watch':'')}">${k}</span> <span class="mono">${f[k].slice(0,15).map(x=>esc(Array.isArray(x)?x.join(' → '):x)).join(', ')}</span></div>`:'').join('')+`<div class="small muted" style="margin-top:6px">${(f.opened||[]).length} distinct paths opened</div>`;
+  const sc=Object.entries(d.syscalls||{}).sort((a,b)=>b[1]-a[1]);const mx=sc.length?sc[0][1]:1;$('#revSyscalls').innerHTML=sc.slice(0,22).map(([k,v])=>`<div style="display:grid;grid-template-columns:120px 1fr 60px;gap:8px;align-items:center;margin:2px 0"><span class="mono small">${esc(k)}</span><div class="bar"><i style="width:${Math.round(100*v/mx)}%"></i></div><span class="small muted right">${v}</span></div>`).join('');
+  $('#revErrors').innerHTML=Object.entries(d.errors||{}).map(([k,v])=>`<span class="tag">${esc(k)} ×${v}</span>`).join('')||'<span class="muted">none</span>';
+  $('#revTimeline').innerHTML=(d.timeline||[]).map(t=>`<div><span class="r">${t.t_ms??''}</span><span class="muted">${esc(t.pid||'')}</span><span class="c">${esc(t.call)}</span><span>${esc(t.args)}</span><span class="r">${esc(t.ret)}</span></div>`).join('')||'<div class="muted" style="padding:8px">no trace</div>';
+ }else{const st=d?(d.run.status+' '+(d.run.hint||d.run.note||d.run.err||'')):'not detonated';$('#revC2').innerHTML='<span class="muted small">'+esc(st)+'</span>';$('#revHits').innerHTML='';$('#revDns').innerHTML='';$('#revArtifacts').innerHTML='';$('#revProcs').innerHTML='';$('#revFiles').innerHTML='';$('#revSyscalls').innerHTML='<span class="muted small">'+esc(st)+'</span>';$('#revErrors').innerHTML='';$('#revTimeline').innerHTML=''}
+ const io=s.iocs||{};$('#revIocs').innerHTML=dl('urls',(io.urls||[]).map(u=>'<span class="mono small">'+esc(u)+'</span>').join('<br>')||'—')+dl('ip:port',(io.ip_ports||[]).map(esc).join(', ')||'—')+dl('ips',(io.ips||[]).slice(0,30).map(esc).join(', ')||'—')+dl('domains',(io.domains||[]).map(esc).join(', ')||'—')+dl('onions',(io.onions||[]).map(esc).join(', ')||'—')+dl('wallets',[...(io.wallets&&io.wallets.btc||[]),...(io.wallets&&io.wallets.xmr||[])].map(esc).join(', ')||'—')+dl('shell commands',(io.shell_commands||[]).map(c=>'<span class="mono small">'+esc(c)+'</span>').join('<br>')||'—');
+ $('#revIntStrings').textContent=(s.interesting_strings||[]).join('\n')||'(none matched)';$('#revAllStrings').classList.add('hidden');
+ $('#revSegs tbody').innerHTML=(e.segments||[]).map(g=>`<tr><td>${esc(g.type)}</td><td class="mono">${esc(g.flags)}</td><td>${g.filesz}</td><td>${g.memsz}</td><td>${g.entropy??''}${g.entropy>=7.2?' <span class="tag watch">packed?</span>':''}</td></tr>`).join('');
+ $('#revSecs tbody').innerHTML=(e.sections||[]).filter(x=>x.name).slice(0,40).map(x=>`<tr><td class="mono">${esc(x.name)}</td><td>${esc(x.type)}</td><td>${x.size}</td><td>${x.entropy??''}</td></tr>`).join('')||'<tr><td colspan=4 class="muted small">no section headers (stripped)</td></tr>';
+ $('#revHex').textContent=rep.hexdump||'';
+ $$('#samples tr.row').forEach(tr=>tr.classList.toggle('sel',tr.innerHTML.includes(short(sha))))}
+
+// ── settings ──
+async function loadSettings(){SETTINGS=await api('/settings');const s=SETTINGS;$('#sMode').value=s.mode;$('#sTimeout').value=s.cell.timeout_s;$('#sAuto').checked=!!s.cell.auto_detonate;$('#sFetch').checked=!!s.cell.fetch_droppers;$('#sFetchMb').value=s.cell.max_fetch_mb;
+ $('#sInput').value=s.sensor.input;$('#sFormat').value=s.sensor.format;$('#sPaths').value=(s.sensor.log_paths||[]).join(', ');$('#sWatch').value=(s.sensor.watch_dirs||[]).join(', ');$('#sExclude').value=(s.sensor.exclude||[]).join(', ');
+ $('#bProv').value=s.byok.provider;$('#bModel').value=s.byok.model||'';$('#bBase').value=s.byok.base_url||'';$('#bKey').value='';$('#bKeyState').textContent=s.byok.has_key?'a key is stored ('+s.byok.api_key+')':'no key stored';
+ $('#tEnabled').checked=!!s.telemetry.enabled;$('#tShare').checked=!!s.telemetry.share_samples;$('#tUrl').value=s.telemetry.url||'';
+ try{const p=await api('/telemetry/preview');$('#tPreview').textContent=JSON.stringify(p.payload,null,1).slice(0,6000)}catch(e){}
+ const ev=await api('/events?limit=80');$('#events').innerHTML=(ev.events||[]).map(x=>`<div>${esc(x.ts.slice(5,19))} <b>${esc(x.kind)}</b> ${esc(Object.entries(x).filter(([k])=>!['ts','kind'].includes(k)).map(([k,v])=>k+'='+(typeof v==='string'?v:JSON.stringify(v))).join(' ').slice(0,220))}</div>`).join('')}
+const list=v=>v.split(',').map(x=>x.trim()).filter(Boolean);
+$('#btnSave').onclick=async()=>{const body={mode:$('#sMode').value,cell:{timeout_s:+$('#sTimeout').value,auto_detonate:$('#sAuto').checked,fetch_droppers:$('#sFetch').checked,max_fetch_mb:+$('#sFetchMb').value},sensor:{input:$('#sInput').value,format:$('#sFormat').value,log_paths:list($('#sPaths').value),watch_dirs:list($('#sWatch').value),exclude:list($('#sExclude').value)},byok:{provider:$('#bProv').value,model:$('#bModel').value.trim(),base_url:$('#bBase').value.trim(),api_key:$('#bKey').value},telemetry:{enabled:$('#tEnabled').checked,share_samples:$('#tShare').checked,url:$('#tUrl').value.trim()}};
+ try{await api('/settings',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});toast('Saved');loadSettings();loadStatus()}catch(e){toast('Save: '+e.message)}};
+$('#btnClearKey').onclick=async()=>{await api('/settings',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({byok:{clear_key:true,provider:'none'}})});toast('Key forgotten');loadSettings()};
+$('#btnBuild').onclick=async()=>{$('#buildOut').textContent='building… (pulls alpine images, 1–3 min)';try{const r=await api('/cell/build',{method:'POST'});$('#buildOut').textContent=(r.rc===0?'ok: ':'failed: ')+r.out.slice(-400);loadStatus()}catch(e){$('#buildOut').textContent='error: '+e.message}};
+
+// boot
+(async()=>{await loadStatus();await loadSamples();const h=location.hash.replace('#','');if(['detonate','sensor','reverse','settings'].includes(h))show(h);setInterval(loadStatus,15000)})();
+</script>
+</body>
+</html>

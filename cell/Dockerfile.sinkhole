@@ -1,0 +1,4 @@
+# The cell's sinkhole: DNS + TCP/UDP catch-all + tcpdump. The script itself is bind-mounted read-only at run time
+# (sandbox/sinkhole.py), so this image is just the tools.
+FROM python:3.12-alpine
+RUN apk add --no-cache iptables tcpdump
