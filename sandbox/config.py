@@ -36,6 +36,12 @@ MODES = ("self-hosted", "ninja-hosted", "hybrid")
 MAX_SAMPLE_BYTES = int(os.environ.get("SANDBOX_MAX_SAMPLE_MB", "32")) * 1024 * 1024
 TOKEN = os.environ.get("SANDBOX_TOKEN", "")          # empty = no auth (bind to 127.0.0.1 then)
 TELEMETRY_URL = os.environ.get("SANDBOX_TELEMETRY_URL", "https://ninjalabz.io/api/sandbox/telemetry")
+HOSTED = bool(os.environ.get("SANDBOX_HOSTED"))     # the Ninja-hosted instance behind Labz auth (settings admin-only at the gate)
+# Deep Scan (a frontier model in the loop on one detonation): house key = Ninja-hosted; self-hosted uses the BYOK key
+DEEP_MODEL = os.environ.get("SANDBOX_DEEP_MODEL", "claude-mythos-5-1")
+DEEP_FALLBACK = os.environ.get("SANDBOX_DEEP_FALLBACK", "claude-opus-5-5")
+DEEP_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+DEEP_DAILY_CAP = int(os.environ.get("SANDBOX_DEEP_DAILY_CAP", "40"))
 
 DEFAULT_SETTINGS: Dict[str, Any] = {
     "mode": os.environ.get("SANDBOX_MODE", "self-hosted"),

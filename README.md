@@ -34,6 +34,10 @@ Try it: drop any Linux ELF on the Detonate tab. Or `curl -F file=@sample http://
 3. **Detonate** (or Settings → *auto-detonate*): about 70 seconds later the Reverse tab shows what it did and who it called.
 4. Files dropped into a **watch directory** (a honeypot's download folder, a quarantine) take the same path.
 
+## Deep Scan
+
+The Reverse tab has a **Deep Scan** console: a conversation with a frontier model over the full report (static, ELF, strings, IOCs, syscall timeline, processes, files, sinkhole hits with the first bytes sent, C2 ranking, ATT&CK). Ask what it is, what the trace proves, what to look at next in the pcap, or for YARA / Suricata rules built only from bytes that are in the report. Model `SANDBOX_DEEP_MODEL` (default `claude-mythos-5-1`, with `claude-opus-5-5` as the fallback when your organisation cannot use it); key = `ANTHROPIC_API_KEY` in `.env` or the BYOK Anthropic key. The transcript is stored beside the detonation as `<sha>.deepscan.json` and labelled model output; it never changes the deterministic verdict. `SANDBOX_DEEP_DAILY_CAP` (40) bounds the spend.
+
 ## Sensor inputs
 
 | `SENSOR_INPUT` | Where the sensor runs | Proxy side |

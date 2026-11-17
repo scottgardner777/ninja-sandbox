@@ -21,6 +21,7 @@
     GET  /api/sandbox/telemetry/preview        the exact JSON that WOULD be sent
     GET  /api/sandbox/events                   activity log
     POST /api/sandbox/cell/build               build the cell images (long)
+    GET  /api/sandbox/deepscan/{sha}  POST     Deep Scan: the transcript / one analyst turn, streamed (SSE); {reset: true} forgets it
 
 Auth: when SANDBOX_TOKEN is set, every /api route needs X-Sandbox-Token (or ?token=). Ninja-hosted mode sits
 behind Labz auth instead and sets the token per tenant.
@@ -33,9 +34,9 @@ import threading
 from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, File, HTTPException, Query, Request, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
 
-from . import __version__, cell, config, dna, explain as explain_mod, reverse, triage
+from . import __version__, cell, config, deepscan, dna, explain as explain_mod, reverse, triage
 from .sensor import core as sensor_core, parsers, run as sensor_run
 
 app = FastAPI(title="Ninja Sandbox", version=__version__, docs_url="/api/docs", redoc_url=None)
@@ -44,6 +45,17 @@ UI = os.path.join(os.path.dirname(HERE), "ui", "index.html")
 CELL_DIR = os.path.join(os.path.dirname(HERE), "cell")
 _jobs: Dict[str, Dict[str, Any]] = {}
 SHA_RE = __import__("re").compile(r"^[0-9a-f]{64}$")
+
+
+def _actor(request: Request) -> str:
+    """Who is driving: the Labz account the gate passed through (X-Labz-User), or nothing when self-hosted."""
+    return (request.headers.get("X-Labz-User") or "")[:120]
+
+
+def _audit(request: Request, action: str, **fields: Any) -> None:
+    who = _actor(request)
+    if who:
+        config.event("audit", action=action, by=who, role=(request.headers.get("X-Labz-Role") or "")[:20], **fields)
 
 
 @app.middleware("http")
@@ -86,7 +98,7 @@ def status():
             "detonated": sum(1 for x in samples if x.get("detonated")), "c2_extracted": sum(1 for x in samples if x.get("c2_extracted")),
             "sensor": {"as_of": pic.get("as_of"), "ips": pic.get("ips"), "probing_ips": pic.get("probing_ips"), "droppers": len(pic.get("droppers") or []),
                        "input": pic.get("input"), "lines_seen": pic.get("lines_seen")},
-            "jobs": {k: v for k, v in _jobs.items() if v.get("state") == "running"}, "telemetry": s["telemetry"]["enabled"], "auth": bool(config.TOKEN)}
+            "jobs": {k: v for k, v in _jobs.items() if v.get("state") == "running"}, "telemetry": s["telemetry"]["enabled"], "auth": bool(config.TOKEN), "hosted": config.HOSTED, "deepscan": deepscan.available(s)}
 
 
 # ── samples ───────────────────────────────────────────────────────────────────────────────────────────────
@@ -105,6 +117,7 @@ async def upload(request: Request, file: Optional[UploadFile] = File(None)):
         if len(b) > config.MAX_SAMPLE_BYTES:
             raise HTTPException(413, f"sample over {config.MAX_SAMPLE_BYTES >> 20} MiB")
         rec = sensor_run.ingest_bytes(b, origin="upload", settings=s, name=file.filename or "")
+        _audit(request, "upload", sha256=rec["sha256"], name=(file.filename or "")[:80])
         return {"ok": True, "sample": rec, "auto_detonate": s["cell"]["auto_detonate"] and rec["kind"] == "elf"}
     try:
         body = await request.json()
@@ -155,9 +168,10 @@ def _run_job(sha: str, meta: Dict[str, Any]):
 
 
 @app.post("/api/sandbox/detonate/{sha}")
-def detonate(sha: str, wait: int = Query(0, ge=0, le=1), timeout: Optional[int] = Query(None, ge=10, le=600)):
+def detonate(request: Request, sha: str, wait: int = Query(0, ge=0, le=1), timeout: Optional[int] = Query(None, ge=10, le=600)):
     sha = _sha(sha)
     meta = _static(sha)
+    _audit(request, "detonate", sha256=sha)
     if meta.get("kind") != "elf":
         raise HTTPException(400, f"the cell runs Linux ELF; this sample is {meta.get('kind')} (static triage is on the Reverse tab)")
     ready = cell.docker_ok()
@@ -312,7 +326,7 @@ async def put_settings(request: Request):
     if body.get("byok", {}).get("clear_key"):
         s["byok"]["api_key"] = ""
     config.save_settings(s)
-    config.event("settings_changed", keys=[k for k in body if k in ("mode", "telemetry", "byok", "cell", "sensor")])
+    config.event("settings_changed", by=_actor(request), keys=[k for k in body if k in ("mode", "telemetry", "byok", "cell", "sensor")])
     return config.public_settings(s)
 
 
@@ -334,3 +348,27 @@ def events(limit: int = Query(100, ge=1, le=1000)):
 @app.post("/api/sandbox/cell/build")
 def cell_build():
     return cell.build_images(CELL_DIR)
+
+
+@app.get("/api/sandbox/deepscan/{sha}")
+def deepscan_get(sha: str):
+    sha = _sha(sha)
+    return {"transcript": deepscan.load(sha), **deepscan.available(config.load_settings())}
+
+
+@app.post("/api/sandbox/deepscan/{sha}")
+async def deepscan_turn(sha: str, request: Request):
+    """One analyst turn, streamed as server-sent events: start, text*, (restart), done | error."""
+    sha = _sha(sha)
+    _static(sha)
+    try:
+        body = await request.json()
+    except Exception:  # noqa: BLE001
+        body = {}
+    if body.get("reset"):
+        deepscan.reset(sha)
+        _audit(request, "deepscan_reset", sha256=sha)
+        return {"ok": True}
+    _audit(request, "deepscan", sha256=sha)
+    gen = deepscan.turn(sha, str(body.get("message") or "")[:4000], config.load_settings())
+    return StreamingResponse(gen, media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
