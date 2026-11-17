@@ -35,6 +35,7 @@ WRITE_RE = re.compile(r'write\((\d+),\s*"((?:[^"\\]|\\.){0,160})')
 KILL_RE = re.compile(r'kill\((-?\d+),\s*(SIG[A-Z0-9]+|\d+)\)')
 SIGNAL_RE = re.compile(r'--- (SIG[A-Z0-9]+)')
 PRCTL_RE = re.compile(r'prctl\(PR_SET_NAME,\s*"([^"]{0,64})"')
+QNAME_RE = re.compile(r'^(?=.{1,253}$)[a-z0-9_](?:[a-z0-9_-]{0,62}[a-z0-9_])?(?:\.[a-z0-9_](?:[a-z0-9_-]{0,62}[a-z0-9_])?)*$')
 SCAN_PORTS = {23, 2323, 80, 8080, 81, 8081, 37215, 52869, 5555, 7547, 49152, 8443, 443, 22, 2222, 5000, 60001, 9000, 8291, 1900, 554, 8000, 8888, 3389, 445, 139, 21, 25, 110, 143, 3306, 6379, 27017, 9200, 5900, 1433, 161, 53}
 PERSIST = ("/etc/rc.local", "/etc/init.d", "/etc/rc", "/etc/cron", "/var/spool/cron", "/etc/systemd", "/etc/profile", "/root/.bashrc",
            "/etc/ld.so.preload", "/etc/inittab", "/etc/xinetd", "authorized_keys", "/etc/passwd", "/etc/shadow")
@@ -142,8 +143,13 @@ def analyse_dynamic(outdir: str, sink_ip: str) -> Dict[str, Any]:
                 e = json.loads(ln)
             except ValueError:
                 continue
-            if e.get("kind") == "dns" and e.get("qname") and e["qname"] not in res["dns"] and len(res["dns"]) < 40:
-                res["dns"].append(e["qname"])
+            if e.get("kind") == "dns" and e.get("qname"):
+                q = e["qname"].strip(".").lower()
+                if QNAME_RE.match(q):
+                    if q not in res["dns"] and len(res["dns"]) < 40:
+                        res["dns"].append(q)
+                else:
+                    res["dns_malformed"] = res.get("dns_malformed", 0) + 1
             if e.get("kind") == "tcp":
                 res["ports"][str(e.get("dport"))] = res["ports"].get(str(e.get("dport")), 0) + 1
                 if len(res["sinkhole_hits"]) < 60:
@@ -155,15 +161,24 @@ def analyse_dynamic(outdir: str, sink_ip: str) -> Dict[str, Any]:
         pass
     # ── the C2 picture ──────────────────────────────────────────────────────────────────────────────────────
     tally: Dict[tuple, int] = {}
+    spoke: Dict[tuple, int] = {}      # bytes the sample actually sent to that endpoint (a beacon speaks first; a scanner mostly does not)
     for c in res["connects"]:
         if not c["via_sinkhole"] and c["ip"] not in NOISE_IPS:
             tally[(c["ip"], c["port"])] = tally.get((c["ip"], c["port"]), 0) + c["attempts"]
     for h in res["sinkhole_hits"]:
         if h.get("dst") and h["dst"] not in (sink_ip, "?"):
-            tally[(h["dst"], h["dport"])] = tally.get((h["dst"], h["dport"]), 0) + 1
-    ranked = sorted(tally.items(), key=lambda kv: -kv[1])
+            k = (h["dst"], h["dport"])
+            tally[k] = tally.get(k, 0) + 1
+            spoke[k] = spoke.get(k, 0) + int(h.get("bytes") or 0)
+    ranked = sorted(tally.items(), key=lambda kv: (-kv[1], -spoke.get(kv[0], 0)))
     total = sum(n for _, n in ranked) or 1
-    res["c2_likely"] = [{"endpoint": f"{ip}:{port}", "attempts": n, "share": round(n / total, 3)} for (ip, port), n in ranked if n >= 5 or n / total >= 0.2][:10]
+    # a C2 is dialled again and again (>= 5 or >= 20 % of all dials), OR it is the endpoint the sample SPOKE to on a
+    # port that is not a scan port (a beacon: "7HdAFTuVf unknown.iot" to :2139 once in 60 s is the C2, the 24 silent
+    # telnet dials are the scan). Foreign-arch runs rely on this: QEMU's tracer does not decode sockaddrs.
+    res["c2_likely"] = [{"endpoint": f"{ip}:{port}", "attempts": n, "share": round(n / total, 3), "spoke_bytes": spoke.get((ip, port), 0),
+                         "why": "repeat dials" if (n >= 5 or n / total >= 0.2) else "beacon payload on a non-scan port"}
+                        for (ip, port), n in ranked
+                        if n >= 5 or n / total >= 0.2 or (spoke.get((ip, port), 0) > 0 and port not in SCAN_PORTS)][:10]
     res["scan_targets"] = sum(1 for (ip, port), n in ranked if n == 1 and port in SCAN_PORTS)
     res["scan_ports"] = sorted({port for (ip, port), n in ranked if port in SCAN_PORTS})[:16]
     res["top_targets"] = [{"endpoint": f"{ip}:{port}", "attempts": n} for (ip, port), n in ranked[:25]]

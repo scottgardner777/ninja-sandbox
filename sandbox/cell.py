@@ -137,9 +137,11 @@ def run_sample(sample_path: str, arch: str, outdir: str, timeout: int, label: st
                  f"-e trace=network,process,file,desc,signal,ipc -o /out/strace.txt /tmp/x > /out/stdout.txt 2>&1; echo $? > /out/exit.txt); "
                  f"ls -la /tmp > /out/tmp_after.txt 2>&1; true")
     else:
-        cmd += ["-e", "QEMU_STRACE=1"]
-        inner = (f"cp /s/sample /tmp/x && chmod +x /tmp/x && cd /tmp && (timeout -s KILL {timeout} /tmp/x > /out/stdout.txt 2> /out/strace.txt; "
-                 f"echo $? > /out/exit.txt); ls -la /tmp > /out/tmp_after.txt 2>&1; true")
+        # foreign arch: qemu-user cannot be ptraced, so its own tracer (QEMU_STRACE) is enabled for the SAMPLE only
+        # (set on the exec, not the shell, so cp/timeout/sh do not pollute the trace). Note: qemu-user does not
+        # decode sockaddrs on every build, so the sinkhole log is the source of truth for network targets here.
+        inner = (f"cp /s/sample /tmp/x && chmod +x /tmp/x && cd /tmp && (timeout -s KILL {timeout} sh -c 'QEMU_STRACE=1 exec /tmp/x' "
+                 f"> /out/stdout.txt 2> /out/strace.txt; echo $? > /out/exit.txt); ls -la /tmp > /out/tmp_after.txt 2>&1; true")
     cmd += [image, "sh", "-c", inner]
     t0 = time.time()
     try:
