@@ -142,6 +142,21 @@ class Sensor:
         self.last_watch = 0.0
         self.seen_droppers = set(self.state.get("seen_droppers") or [])
         self.fmt = self.settings["sensor"].get("format", "auto")
+        self._rehydrate()
+
+    def _rehydrate(self) -> None:
+        """The aggregate is in memory; rebuild the rolling-day picture from requests.jsonl so a restart never blanks it."""
+        since = time.time() - 86400
+        n = 0
+        for r in load_requests(int(self.settings["sensor"].get("retain_requests", 200000))):
+            if float(r.get("ts") or 0) < since:
+                continue
+            self.agg.add({**r, "uri": r.get("uri") or r.get("path") or "/"}, self.owner)
+            n += 1
+        self.agg.droppers = []          # already in droppers.jsonl
+        self.agg.lines = int(self.state.get("lines_seen") or n)
+        if n:
+            print(f"[sensor] rehydrated {n} requests from the last 24 h ({len(self.agg.ips)} ips)", flush=True)
 
     # ── ingest ─────────────────────────────────────────────────────────────────────────────────────────
     def on_line(self, line: str, source: str) -> None:
@@ -254,6 +269,7 @@ class Sensor:
                 if time.time() - self.last_telemetry > TELEMETRY_EVERY_S:
                     self.telemetry()
                 self.state["seen_droppers"] = sorted(self.seen_droppers)[-5000:]
+                self.state["lines_seen"] = self.agg.lines
                 save_state(self.state)
             except Exception as e:  # noqa: BLE001
                 print(f"[sensor] tick error: {type(e).__name__}: {e}", file=sys.stderr, flush=True)
