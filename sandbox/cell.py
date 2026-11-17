@@ -58,15 +58,32 @@ def host_path(p: str) -> str:
     return p
 
 
+_binfmt_cache: Dict[str, Any] = {"at": 0.0, "ok": False}
+
+
+def binfmt_ok(imgs: list) -> bool:
+    """Can this Docker host run a foreign-arch container? The binfmt table is not visible from inside a container,
+    so probe it for real (an arm64 `true`), cached for 10 minutes."""
+    try:
+        if any(n.startswith("qemu-") for n in os.listdir("/proc/sys/fs/binfmt_misc")):
+            return True
+    except OSError:
+        pass
+    if time.time() - _binfmt_cache["at"] < 600:
+        return _binfmt_cache["ok"]
+    ok = False
+    if IMAGES["aarch64"][0] in imgs:
+        r = sh(["docker", "run", "--rm", "--platform", "linux/arm64", "--network", "none", IMAGES["aarch64"][0], "true"], timeout=60)
+        ok = r.returncode == 0
+    _binfmt_cache.update({"at": time.time(), "ok": ok})
+    return ok
+
+
 def docker_ok() -> Dict[str, Any]:
     r = sh(["docker", "version", "--format", "{{.Server.Version}}"], timeout=20)
     imgs = sh(["docker", "images", "--format", "{{.Repository}}:{{.Tag}}"], timeout=30).stdout.split() if r.returncode == 0 else []
     have = {k: (v[0] in imgs) for k, v in IMAGES.items() if v}
-    binfmt = False
-    try:
-        binfmt = any(n.startswith("qemu-") for n in os.listdir("/proc/sys/fs/binfmt_misc"))
-    except OSError:
-        pass
+    binfmt = binfmt_ok(imgs) if r.returncode == 0 else False
     return {"docker": r.returncode == 0, "server": r.stdout.strip() if r.returncode == 0 else r.stderr.strip()[-200:],
             "images": have, "sinkhole_image": SINK_IMAGE in imgs, "binfmt_foreign_arch": binfmt,
             "ready": r.returncode == 0 and have.get("x86-64", False) and SINK_IMAGE in imgs}
