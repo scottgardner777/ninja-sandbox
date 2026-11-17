@@ -28,6 +28,7 @@ from typing import Callable, Iterable, Optional
 
 log = logging.getLogger("sandbox.dna")
 
+MAX_CLUSTER_IPS = 600
 _DEFAULT_EXCLUDE = ("10.0.0.0/8", "127.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "::1/128", "fc00::/7", "fe80::/10")
 
 
@@ -451,44 +452,49 @@ def cluster_by_behaviour(profiles: dict, threshold: float = 0.85) -> list[dict]:
     and two groups only join when every cross pair clears the threshold, so
     each reported cluster's MIN (and therefore average) similarity >= threshold.
     Excluded IPs are filtered by the caller before profiling (is_excluded)."""
-    ips = list(profiles.keys())
-    if len(ips) < 2:
+    # Pure Python (no numpy in the sandbox image). O(n^2) pairs: cap at the MAX_CLUSTER_IPS most active IPs.
+    ips = sorted(profiles.keys(), key=lambda ip: -profiles[ip]["features"].get("total_requests", 0))[:MAX_CLUSTER_IPS]
+    n = len(ips)
+    if n < 2:
         return []
-
-    raw_vectors = [_to_vector(profiles[ip]["features"]) for ip in ips]
-    # Z-score normalize so high-magnitude features (velocity, IRT) don't dominate cosine
-    import numpy as _np
-    mat = _np.array(raw_vectors, dtype=_np.float64)
-    means = mat.mean(axis=0)
-    stds = mat.std(axis=0)
-    stds[stds == 0] = 1.0  # avoid division by zero for constant features
-    mat = (mat - means) / stds
-    norms = _np.linalg.norm(mat, axis=1)
-    safe = _np.where(norms < 1e-12, 1.0, norms)
-    unit = mat / safe[:, None]
-    sim = unit @ unit.T
-    zero = norms < 1e-12
-    sim[zero, :] = 0.0
-    sim[:, zero] = 0.0
-
-    # Candidate edges above threshold, strongest first
-    iu, ju = _np.triu_indices(len(ips), k=1)
-    sv = sim[iu, ju]
-    keep = sv >= threshold
-    if not keep.any():
+    raw = [_to_vector(profiles[ip]["features"]) for ip in ips]
+    dims = len(raw[0])
+    # Z-score normalise so high-magnitude features (velocity, IRT) don't dominate cosine
+    means = [sum(v[d] for v in raw) / n for d in range(dims)]
+    stds = [math.sqrt(sum((v[d] - means[d]) ** 2 for v in raw) / n) or 1.0 for d in range(dims)]
+    unit = []
+    for v in raw:
+        z = [(v[d] - means[d]) / stds[d] for d in range(dims)]
+        nrm = math.sqrt(sum(x * x for x in z))
+        unit.append([x / nrm for x in z] if nrm >= 1e-12 else None)
+    sim = [[0.0] * n for _ in range(n)]
+    edges = []
+    for i in range(n):
+        sim[i][i] = 1.0
+        ui = unit[i]
+        if ui is None:
+            continue
+        for j in range(i + 1, n):
+            uj = unit[j]
+            if uj is None:
+                continue
+            sv = sum(a * b for a, b in zip(ui, uj))
+            sim[i][j] = sim[j][i] = sv
+            if sv >= threshold:
+                edges.append((sv, i, j))
+    if not edges:
         return []
-    order = _np.argsort(-sv[keep], kind="stable")
-    edges = list(zip(iu[keep][order].tolist(), ju[keep][order].tolist()))
+    edges.sort(key=lambda e: -e[0])
 
-    # Complete-linkage merge: cluster id per index, members per cluster
-    cid_of = list(range(len(ips)))
-    members_of: dict[int, list[int]] = {i: [i] for i in range(len(ips))}
-    for a, b in edges:
+    # Complete-linkage merge: two groups join only when EVERY cross pair clears the threshold
+    cid_of = list(range(n))
+    members_of: dict[int, list[int]] = {i: [i] for i in range(n)}
+    for _sv, a, b in edges:
         ca, cb = cid_of[a], cid_of[b]
         if ca == cb:
             continue
         ma, mb = members_of[ca], members_of[cb]
-        if sim[_np.ix_(ma, mb)].min() < threshold:
+        if min(sim[x][y] for x in ma for y in mb) < threshold:
             continue
         if len(ma) < len(mb):
             ca, cb, ma, mb = cb, ca, mb, ma
@@ -502,16 +508,11 @@ def cluster_by_behaviour(profiles: dict, threshold: float = 0.85) -> list[dict]:
         if len(idxs) < 2:
             continue
         members = [ips[i] for i in idxs]
-
-        # Shared archetype
         archetypes = [profiles[ip]["archetype"]["primary"] for ip in members]
         shared = Counter(archetypes).most_common(1)[0][0]
-
-        block = sim[_np.ix_(idxs, idxs)]
-        tri = block[_np.triu_indices(len(idxs), k=1)]
-        avg_sim = float(tri.mean())
-        min_sim = float(tri.min())
-
+        pairs = [sim[idxs[x]][idxs[y]] for x in range(len(idxs)) for y in range(x + 1, len(idxs))]
+        avg_sim = sum(pairs) / len(pairs)
+        min_sim = min(pairs)
         cid = hashlib.md5("|".join(sorted(members)).encode()).hexdigest()[:8]
         clusters.append({
             "cluster_id": cid,
