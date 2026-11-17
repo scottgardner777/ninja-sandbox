@@ -38,7 +38,7 @@ TOKEN = os.environ.get("SANDBOX_TOKEN", "")          # empty = no auth (bind to 
 TELEMETRY_URL = os.environ.get("SANDBOX_TELEMETRY_URL", "https://ninjalabz.io/api/sandbox/telemetry")
 HOSTED = bool(os.environ.get("SANDBOX_HOSTED"))     # the Ninja-hosted instance behind Labz auth (settings admin-only at the gate)
 # Deep Scan (a frontier model in the loop on one detonation): house key = Ninja-hosted; self-hosted uses the BYOK key
-DEEP_MODEL = os.environ.get("SANDBOX_DEEP_MODEL", "claude-mythos-5-1")
+DEEP_MODEL = os.environ.get("SANDBOX_DEEP_MODEL", "claude-fable-5-2")   # claude-mythos-5-2 for verified organisations
 DEEP_FALLBACK = os.environ.get("SANDBOX_DEEP_FALLBACK", "claude-opus-5-5")
 DEEP_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 DEEP_DAILY_CAP = int(os.environ.get("SANDBOX_DEEP_DAILY_CAP", "40"))

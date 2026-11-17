@@ -7,7 +7,7 @@ syscall timeline, processes, files, sinkhole hits with the first bytes sent, C2 
 to the UI as server-sent events; the transcript is kept beside the detonation as `<sha>.deepscan.json` with
 `provenance: claude` (D7: model output is never training data).
 
-Model:  SANDBOX_DEEP_MODEL   (default claude-mythos-5-1, served to verified organisations) with
+Model:  SANDBOX_DEEP_MODEL   (default claude-fable-5-2; claude-mythos-5-2 is the same model for verified organisations) with
         SANDBOX_DEEP_FALLBACK (default claude-opus-5-5) when the organisation has no access, the model is unknown,
         or it declines. Adaptive thinking, high effort, prompt-cached context.
 Key:    the house key (ANTHROPIC_API_KEY in the sandbox's environment: Ninja-hosted), else the BYOK Anthropic key.
